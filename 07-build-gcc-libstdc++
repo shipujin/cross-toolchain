@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+# gcc libstdc++
+pushd .
+cd gcc
+INSTALL_DIR="${PWD}/install"
+rm -rf ${INSTALL_DIR}
+tar xf gcc-10.2.0.tar.gz
+rm -rf build
+mkdir build
+cd build
+../gcc-10.2.0/libstdc++-v3/configure --prefix=/usr --build=x86_64-unknown-linux-gnu --host=mips64el-unknown-linux-gnu --target=mips64el-unknown-linux-gnu --enable-shared --disable-nls --enable-multilib
+make -j4
+make DESTDIR=${INSTALL_DIR} install-strip
+cp -a ${INSTALL_DIR}/* /opt/mips64el-toolchain/platforms/linux-2.6/
+cp -a ${INSTALL_DIR}/* /opt/mips64el-toolchain/platforms/linux-3.4/
+popd

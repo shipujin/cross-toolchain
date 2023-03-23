@@ -1,0 +1,72 @@
+#!/bin/bash
+
+set -e
+
+rm -f /opt/mips64el-toolchain/platforms/current
+
+mkdir -p /opt/mips64el-toolchain/platforms/current/usr/
+cp -a linux/install/* /opt/mips64el-toolchain/platforms/current/usr/
+
+# glibc linux-3.4
+pushd .
+cd glibc
+tar xf glibc-2.32.tar.gz
+# n64
+INSTALL_DIR="${PWD}/linux-3.4/install-n64"
+rm -rf build
+mkdir build
+cd build
+export CFLAGS="-march=mips64r2 -mabi=64 -O2"
+export CXXFLAGS="-march=mips64r2 -mabi=64 -O2"
+cp ../config-n64.cache config.cache
+../glibc-2.32/configure --prefix=/usr --build=x86_64-unknown-linux-gnu --host=mips64el-unknown-linux-gnu --disable-profile --enable-add-ons --with-tls --enable-kernel=3.4 --with-__thread --cache-file=config.cache
+make -j4
+make DESTDIR=${INSTALL_DIR} install
+mv ${INSTALL_DIR}/sbin/* ${INSTALL_DIR}/usr/sbin
+mv ${INSTALL_DIR}/usr/lib/* ${INSTALL_DIR}/usr/lib64
+rm -rf ${INSTALL_DIR}/{sbin,lib,usr/lib}
+ln -sf usr/bin ${INSTALL_DIR}/bin
+ln -sf usr/sbin ${INSTALL_DIR}/sbin
+ln -sf usr/lib ${INSTALL_DIR}/lib
+ln -sf usr/lib32 ${INSTALL_DIR}/lib32
+ln -sf usr/lib64 ${INSTALL_DIR}/lib64
+sed -i -e 's|lib\/|lib64\/|g' ${INSTALL_DIR}/usr/lib64/libc.so ${INSTALL_DIR}/usr/lib64/libpthread.so
+cp -a ${INSTALL_DIR}/* /opt/mips64el-toolchain/platforms/current/
+# n32
+cd  ..
+INSTALL_DIR="${PWD}/linux-3.4/install-n32"
+rm -rf build
+mkdir build
+cd build
+export CFLAGS="-march=mips64r2 -mabi=n32 -O2"
+export CXXFLAGS="-march=mips64r2 -mabi=n32 -O2"
+cp ../config-n32.cache config.cache
+../glibc-2.32/configure --prefix=/usr --build=x86_64-unknown-linux-gnu --host=mips64el-unknown-linux-gnu --disable-profile --enable-add-ons --with-tls --enable-kernel=3.4 --with-__thread --cache-file=config.cache
+make -j4
+make DESTDIR=${INSTALL_DIR} install
+mv ${INSTALL_DIR}/usr/lib/* ${INSTALL_DIR}/usr/lib32
+rm -rf ${INSTALL_DIR}/{etc,sbin,var}
+rm -rf ${INSTALL_DIR}/usr/{bin,sbin,share,lib,libexec}
+sed -i -e 's|lib\/|lib32\/|g' \
+       -e 's|elf64-tradlittlemips|elf32-ntradlittlemips|g' ${INSTALL_DIR}/usr/lib32/libc.so ${INSTALL_DIR}/usr/lib32/libpthread.so
+cp -a ${INSTALL_DIR}/* /opt/mips64el-toolchain/platforms/current/
+# o32
+cd  ..
+INSTALL_DIR="${PWD}/linux-3.4/install-o32"
+rm -rf build
+mkdir build
+cd build
+export CFLAGS="-march=mips32r2 -mabi=32 -O2"
+export CXXFLAGS="-march=mips32r2 -mabi=32 -O2"
+cp ../config-o32.cache config.cache
+../glibc-2.32/configure --prefix=/usr --build=x86_64-unknown-linux-gnu --host=mips64el-unknown-linux-gnu --disable-profile --enable-add-ons --with-tls --enable-kernel=3.4 --with-__thread --cache-file=config.cache
+make -j4
+make DESTDIR=${INSTALL_DIR} install
+rm -rf ${INSTALL_DIR}/{etc,sbin,var}
+rm -rf ${INSTALL_DIR}/usr/{bin,sbin,share,libexec}
+sed -i -e 's|elf64-tradlittlemips|elf32-tradlittlemips|g' ${INSTALL_DIR}/usr/lib/libc.so ${INSTALL_DIR}/usr/lib/libpthread.so
+cp -a ${INSTALL_DIR}/* /opt/mips64el-toolchain/platforms/current/
+popd
+
+mv /opt/mips64el-toolchain/platforms/current /opt/mips64el-toolchain/platforms/linux-3.4
+ln -sf linux-3.4 /opt/mips64el-toolchain/platforms/current

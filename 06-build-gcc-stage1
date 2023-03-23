@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+# gcc stage1
+pushd .
+cd gcc
+INSTALL_DIR="${PWD}/install"
+rm -rf ${INSTALL_DIR}
+tar xf gcc-10.2.0.tar.gz
+rm -rf build
+mkdir build
+cd build
+../gcc-10.2.0/configure --prefix=/opt/mips64el-toolchain --build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu --target=mips64el-unknown-linux-gnu  --with-sysroot=/opt/mips64el-toolchain/platforms/current --enable-languages=c,c++ --enable-shared --enable-threads --disable-nls --enable-multilib --with-newlib --with-arch=mips64r2 --with-abi=64 --without-odd-spreg-32
+make all-gcc all-target-libgcc -j4
+make DESTDIR=${INSTALL_DIR} install-strip-gcc install-strip-target-libgcc
+mkdir -p ${INSTALL_DIR}/opt/mips64el-toolchain/mips64el-unknown-linux-gnu/include/
+ln -sf ../../platforms/current/usr/include/c++ ${INSTALL_DIR}/opt/mips64el-toolchain/mips64el-unknown-linux-gnu/include/c++
+rm -rf ${INSTALL_DIR}/opt/mips64el-toolchain/include
+cp -a ${INSTALL_DIR}/opt/mips64el-toolchain /opt/
+popd
+
